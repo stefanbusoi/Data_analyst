@@ -19,7 +19,6 @@ The script requires Python 3 and the following libraries:
 
 - `pandas`
 - `rapidfuzz`
-- `numpy`
 
 You can install the required dependencies using pip:
 
