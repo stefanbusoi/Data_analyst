@@ -52,6 +52,14 @@ def clean_company_name(name):
     
     return " ".join(words)
 
+def calculate_validity_score(row):
+    validity_score = 100
+    email = str(row.get('primary_email', '')).lower()
+    common_domains = ['@gmail.', '@yahoo.', '@hotmail.', '@outlook.', '@aol.', '@icloud.', '@live.', '@msn.']
+    if any(domain in email for domain in common_domains):
+        validity_score = 90
+    return validity_score
+
 def calculate_match_score(row):
     input_name = clean_company_name(row['input_company_name'])
     
@@ -95,23 +103,31 @@ def calculate_match_score(row):
     candidate_street = clean_str(row.get('main_street', ''))
     street_score = fuzz.token_set_ratio(input_street, candidate_street) if (input_street and candidate_street) else 0
     
-    location_detail_score = max(postcode_score, street_score)
+    if  input_street == "" and input_postcode=='':
+        location_detail_score=100
+    else:
+        location_detail_score = max(postcode_score, street_score)
     
+    if input_city == '':
+        city_score=100
+    if input_country == '':
+        country_score=100
+
+
     total_score = (name_score * 0.45) + (country_score * 0.25) + (city_score * 0.15) + (location_detail_score * 0.15)
     if country_score == 0 and input_country != "":
         total_score *= 0.5
 
-    email = str(row.get('primary_email', '')).lower()
-    common_domains = ['@gmail.', '@yahoo.', '@hotmail.', '@outlook.', '@aol.', '@icloud.', '@live.', '@msn.']
-    if any(domain in email for domain in common_domains):
-        total_score *= 0.9
+    validity_score = calculate_validity_score(row)
+    total_score *= (validity_score / 100.0)
 
     return pd.Series({
         'match_score': round(total_score, 2),
         'name_score': round(name_score, 2),
         'country_score': round(country_score, 2),
         'city_score': round(city_score, 2),
-        'location_detail_score': round(location_detail_score, 2)
+        'location_detail_score': round(location_detail_score, 2),
+        'validity_score': round(validity_score, 2)
     })
 
 def main():
@@ -155,8 +171,9 @@ def main():
                 country_score = candidate['country_score']
                 city_score = candidate['city_score']
                 location_detail_score = candidate['location_detail_score']
+                validity_score = candidate.get('validity_score', 100)
                 color = GREEN if score >= scoreThreshold else RED
-                print(f"  {color}Candidate: {candidate_id}({candidate.get('company_name')}) | Score: {score}%| NameScore: {name_score}%| CountryScore: {country_score}%| CityScore: {city_score}%| LocationDetailScore: {location_detail_score}%{RESET}")
+                print(f"  {color}Candidate: {candidate_id}({candidate.get('company_name')}) | Score: {score}%| NameScore: {name_score}%| CountryScore: {country_score}%| CityScore: {city_score}%| LocationDetailScore: {location_detail_score}%| ValidityScore: {validity_score}%{RESET}")
                 
             print("-" * 60)
             
@@ -176,12 +193,12 @@ def main():
         
         results_df = pd.DataFrame(resolved_results)
         results_df.to_csv(args.outputFile, index=False)
-        print(f"Rezultatele au fost salvate in {args.outputFile}")
+        print(f"Results have been saved to {args.outputFile}")
         
         if args.unresolvedFile and unresolved_keys:
             unresolved_df = df[df['input_row_key'].isin(unresolved_keys)]
             unresolved_df.to_csv(args.unresolvedFile, index=False)
-            print(f"Unresolved entities au fost salvate in {args.unresolvedFile}")
+            print(f"Unresolved entities have been saved to {args.unresolvedFile}")
 
     except Exception as e:
         print(f"An error occurred: {e}")

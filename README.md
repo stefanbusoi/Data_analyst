@@ -1,17 +1,21 @@
 # Entity Resolution Analyzer
 
 This project is a Python-based tool for matching and resolving company entities from datasets. It uses fuzzy string matching and heuristic-based scoring across various data points (such as company name, country, city, street, and email) to determine the best match between an input entity and a set of candidate entities.
+## How I Resolved the Issue (Methodology)
 
-## Features
+My approach to solving the entity resolution challenge evolved iteratively as I encountered various data anomalies:
 
-- **Fuzzy Matching:** Utilizes `rapidfuzz` for robust string similarity comparisons of company names and locations.
-- **Data Cleaning:** Automatically normalizes strings, standardizes company suffixes (e.g., INC, LLC, GMBH), and handles missing values.
-- **Multi-Factor Scoring:** Calculates a weighted overall match score based on:
-  - Company Name (45%)
-  - Country (25%)
-  - City (15%)
-  - Location Details like Street or Postcode (15%)
-- **Penalties:** Applies score penalties for mismatches in critical fields (like country) or generic email domains (e.g., gmail.com, yahoo.com).
+1. **Initial Naive Matching & Scoring:** Initially, I simply checked if the input company names and location data were identical to the Veridion candidate data, assigning a basic score based on exact matches.
+2. **Data Cleaning (Name Normalization):** I quickly realized that raw names rarely match perfectly. I decided to clean the company names by stripping out punctuation and common corporate suffixes (like "Inc", "LLC", "Ltd", "GmbH", etc.) to improve the accuracy of the fuzzy string comparisons.
+3. **Advanced Location Logic:** Exact country matches were too restrictive. I improved the algorithm to award a perfect score if the input country was found within the candidate's `locations` string. I also added fallback logic to award partial points if the number of locations was greater than what could be fully extracted, acknowledging potential multi-national presence.
+4. **Email Validation:** Finally, to ensure high-quality matches and penalize poor data, I added an email validation step. I checked the `primary_email` to ensure it wasn't a generic/common email domain (e.g., `@gmail.com`, `@yahoo.com`), reducing the score for non-corporate emails.
+
+The scoring weights are as follows:
+- Company Name (45%)
+- Country (25%)
+- City (15%)
+- Location Details like Street or Postcode (15%)
+- a possible penalty of 10% for common email domains
 
 ## Prerequisites
 
