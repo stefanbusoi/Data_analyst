@@ -17,6 +17,9 @@ The scoring weights are as follows:
 - Location Details like Street or Postcode (15%)
 - a possible penalty of 10% for common email domains
 
+5. **Remove duplicates** if one veridion_id was found for multiple input_row_key, we group the dataset by this id and keep only one time the company with the highest match score
+
+I also used checkDataPercentFilled.py to verify the percentage of filled data in the dataset for a better understanding of what i have in the dataset
 ## Prerequisites
 
 The script requires Python 3 and the following libraries:
